@@ -21,18 +21,17 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.Random;
 
 /**
  * AES CBC模式加密工具类
  *
- * @author hubin
- * @since 2020-05-23
+ * @author cryptocheck
+ * @since 2024-11-25
  */
 public class AES {
 
-    private static final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     /**
      * 加密
@@ -47,8 +46,21 @@ public class AES {
             byte[] enCodeFormat = secretKey.getEncoded();
             SecretKeySpec secretKeySpec = new SecretKeySpec(enCodeFormat, Constants.AES);
             Cipher cipher = Cipher.getInstance(Constants.AES_CBC_CIPHER);
-            cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, new IvParameterSpec(key));
-            return cipher.doFinal(data);
+
+            // 生成随机的IV
+            byte[] iv = new byte[16];
+            new SecureRandom().nextBytes(iv);
+            IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
+
+            cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec);
+            byte[] encryptedData = cipher.doFinal(data);
+
+            // 将IV和加密数据拼接在一起
+            byte[] result = new byte[iv.length + encryptedData.length];
+            System.arraycopy(iv, 0, result, 0, iv.length);
+            System.arraycopy(encryptedData, 0, result, iv.length, encryptedData.length);
+
+            return result;
         } catch (Exception e) {
             throw new MybatisPlusException(e);
         }
@@ -67,8 +79,18 @@ public class AES {
             byte[] enCodeFormat = secretKey.getEncoded();
             SecretKeySpec secretKeySpec = new SecretKeySpec(enCodeFormat, Constants.AES);
             Cipher cipher = Cipher.getInstance(Constants.AES_CBC_CIPHER);
-            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, new IvParameterSpec(key));
-            return cipher.doFinal(data);
+
+            // 提取IV
+            byte[] iv = new byte[16];
+            System.arraycopy(data, 0, iv, 0, iv.length);
+            IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
+
+            // 提取加密数据
+            byte[] encryptedData = new byte[data.length - iv.length];
+            System.arraycopy(data, iv.length, encryptedData, 0, encryptedData.length);
+
+            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
+            return cipher.doFinal(encryptedData);
         } catch (Exception e) {
             throw new MybatisPlusException(e);
         }
@@ -105,14 +127,9 @@ public class AES {
      * @return 密钥
      */
     public static String generateRandomKey() {
-        Random random = new Random();
-        StringBuilder buffer = new StringBuilder();
-        int keySize = 16;
-        int length = CHARS.length();
-        while (keySize-- != 0) {
-            buffer.append(CHARS.charAt(random.nextInt(length)));
-        }
-        return buffer.toString();
+        SecureRandom random = new SecureRandom();
+        byte[] key = new byte[16]; // 16 bytes = 128 bits
+        random.nextBytes(key);
+        return Base64.getEncoder().encodeToString(key);
     }
-
 }
