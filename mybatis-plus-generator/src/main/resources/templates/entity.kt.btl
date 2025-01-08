@@ -1,13 +1,7 @@
 package ${package.Entity}
 
-<% for(pkg in table.importPackages){ %>
-import ${pkg}
-<% } %>
-<% if(springdoc){ %>
-import io.swagger.v3.oas.annotations.media.Schema;
-<% }else if(swagger){ %>
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+<% for(pkg in importEntityPackages){ %>
+import ${pkg};
 <% } %>
 
 /**
@@ -18,13 +12,8 @@ import io.swagger.annotations.ApiModelProperty;
  * @author ${author}
  * @since ${date}
  */
-<% if(table.convert){ %>
-@TableName("${schemaName}${table.name}")
-<% } %>
-<% if(springdoc){ %>
-@Schema(name = "${entity}", description = "$!{table.comment}")
-<% }else if(swagger){ %>
-@ApiModel(value = "${entity}对象", description = "${table.comment!''}")
+<% for(an in entityClassAnnotations){ %>
+${an.displayName}
 <% } %>
 <% if(isNotEmpty(superEntityClass)){ %>
 class ${entity} : ${superEntityClass}<% if(activeRecord){ %><${entity}><%}%>() {

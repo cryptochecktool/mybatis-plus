@@ -229,7 +229,7 @@ public class TableInfoHelper {
             String[] ep = table.excludeProperty();
             String[] ip = table.properties();
             if (ArrayUtils.isNotEmpty(ip)) {
-                List<String> list = Arrays.asList(ep);
+                List<String> list = Arrays.asList(ip);
                 propertySelector = list::contains;
             } else if (ArrayUtils.isNotEmpty(ep)) {
                 List<String> list = Arrays.asList(ep);

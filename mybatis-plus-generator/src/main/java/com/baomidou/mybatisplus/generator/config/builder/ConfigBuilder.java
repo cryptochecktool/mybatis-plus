@@ -115,7 +115,7 @@ public class ConfigBuilder {
         this.templateConfig = Optional.ofNullable(templateConfig).orElseGet(GeneratorBuilder::templateConfig);
         this.packageConfig = Optional.ofNullable(packageConfig).orElseGet(GeneratorBuilder::packageConfig);
         this.injectionConfig = Optional.ofNullable(injectionConfig).orElseGet(GeneratorBuilder::injectionConfig);
-        this.pathInfo.putAll(new PathInfoHandler(this.globalConfig, this.strategyConfig, this.packageConfig).getPathInfo());
+        this.pathInfo.putAll(new PathInfoHandler(this.injectionConfig, this.globalConfig, this.strategyConfig, this.packageConfig).getPathInfo());
         Class<? extends IDatabaseQuery> databaseQueryClass = dataSourceConfig.getDatabaseQueryClass();
         try {
             Constructor<? extends IDatabaseQuery> declaredConstructor = databaseQueryClass.getDeclaredConstructor(this.getClass());

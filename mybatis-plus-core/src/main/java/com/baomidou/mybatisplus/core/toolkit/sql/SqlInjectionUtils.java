@@ -55,7 +55,7 @@ public class SqlInjectionUtils {
      * @param text 待处理字段
      */
     public static String removeEscapeCharacter(String text) {
-        Objects.nonNull(text);
+        Objects.requireNonNull(text);
         return text.replaceAll("\"", "").replaceAll("'", "");
     }
 }

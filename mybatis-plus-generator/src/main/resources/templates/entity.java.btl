@@ -1,20 +1,7 @@
 package ${package.Entity};
 
-<% for(pkg in table.importPackages){ %>
+<% for(pkg in importEntityPackages){ %>
 import ${pkg};
-<% } %>
-<% if(springdoc){ %>
-import io.swagger.v3.oas.annotations.media.Schema;
-<% }else if(swagger){ %>
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
-<% } %>
-<% if(entityLombokModel){ %>
-import lombok.Getter;
-import lombok.Setter;
-<% if(chainModel){ %>
-import lombok.experimental.Accessors;
-<% } %>
 <% } %>
 
 /**
@@ -25,20 +12,8 @@ import lombok.experimental.Accessors;
  * @author ${author}
  * @since ${date}
  */
-<% if(entityLombokModel){ %>
-@Getter
-@Setter
-    <% if(chainModel){ %>
-@Accessors(chain = true)
-    <% } %>
-<% } %>
-<% if(table.convert){ %>
-@TableName("${schemaName}${table.name}")
-<% } %>
-<% if(springdoc){ %>
-@Schema(name = "${entity}", description = "${table.comment!''}")
-<% }else if(swagger){ %>
-@ApiModel(value = "${entity}对象", description = "${table.comment!''}")
+<% for(an in entityClassAnnotations){ %>
+${an.displayName}
 <% } %>
 <% if(isNotEmpty(superEntityClass)){ %>
 public class ${entity} extends ${superEntityClass}<% if(activeRecord){ %><${entity}><%}%>{

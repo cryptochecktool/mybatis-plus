@@ -46,7 +46,7 @@ public class EnjoyTemplateEngine extends AbstractTemplateEngine {
 
     @Override
     public String writer(@NotNull Map<String, Object> objectMap, @NotNull String templateName, @NotNull String templateString) throws Exception {
-        Template template = engine.getTemplate(templateString);
+        Template template = engine.getTemplateByString(templateString);
         return template.renderToString(objectMap);
     }
 

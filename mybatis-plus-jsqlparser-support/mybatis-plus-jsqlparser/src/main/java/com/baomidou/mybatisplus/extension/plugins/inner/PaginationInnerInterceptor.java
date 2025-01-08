@@ -391,10 +391,7 @@ public class PaginationInnerInterceptor implements InnerInterceptor {
                 List<OrderByElement> orderByElementsReturn = addOrderByElements(orderList, orderByElements);
                 setOperationList.setOrderByElements(orderByElementsReturn);
                 return setOperationList.toString();
-            } else if (selectBody instanceof WithItem) {
-                // todo: don't known how to resole
-                return originalSql;
-            } else {
+            }  else {
                 return originalSql;
             }
         } catch (JSQLParserException e) {

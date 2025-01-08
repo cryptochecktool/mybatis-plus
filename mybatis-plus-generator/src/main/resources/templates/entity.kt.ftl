@@ -1,14 +1,8 @@
 package ${package.Entity}
 
-<#list table.importPackages as pkg>
+<#list importEntityPackages as pkg>
 import ${pkg}
 </#list>
-<#if springdoc>
-import io.swagger.v3.oas.annotations.media.Schema;
-<#elseif swagger>
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
-</#if>
 
 /**
  * <p>
@@ -18,14 +12,9 @@ import io.swagger.annotations.ApiModelProperty;
  * @author ${author}
  * @since ${date}
  */
-<#if table.convert>
-@TableName("${schemaName}${table.name}")
-</#if>
-<#if springdoc>
-@Schema(name = "${entity}", description = "$!{table.comment}")
-<#elseif swagger>
-@ApiModel(value = "${entity}对象", description = "${table.comment!}")
-</#if>
+<#list entityClassAnnotations as an>
+${an.displayName}
+</#list>
 <#if superEntityClass??>
 class ${entity} : ${superEntityClass}<#if activeRecord><${entity}></#if>() {
 <#elseif activeRecord>

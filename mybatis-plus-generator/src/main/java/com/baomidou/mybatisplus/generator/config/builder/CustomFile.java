@@ -61,6 +61,16 @@ public class CustomFile {
     private boolean fileOverride;
 
     /**
+     * 获取文件短名称(去除后缀)
+     *
+     * @return 文件名
+     * @since 3.5.10
+     */
+    public String getShortName() {
+        return fileName.substring(0, fileName.lastIndexOf("."));
+    }
+
+    /**
      * 构建者
      */
     public static class Builder implements IConfigBuilder<CustomFile> {

@@ -25,6 +25,12 @@ import java.util.Map;
 @Setter
 @Builder
 public class IgnoreStrategy {
+
+    /**
+     * @since 3.5.10
+     */
+    public static final IgnoreStrategy DEFAULT = IgnoreStrategy.builder().build();
+
     private Boolean tenantLine;
     private Boolean dynamicTableName;
     private Boolean blockAttack;

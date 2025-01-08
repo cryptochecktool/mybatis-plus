@@ -240,15 +240,13 @@ public abstract class BaseMultiTableInnerInterceptor extends JsqlParserSupport i
      */
     protected void processOtherFromItem(FromItem fromItem, final String whereSegment) {
         // 去除括号
-//        while (fromItem instanceof ParenthesisFromItem) {
-//            fromItem = ((ParenthesisFromItem) fromItem).getFromItem();
-//        }
+        while (fromItem instanceof ParenthesedFromItem) {
+            fromItem = ((ParenthesedFromItem) fromItem).getFromItem();
+        }
 
         if (fromItem instanceof ParenthesedSelect) {
             Select subSelect = (Select) fromItem;
             processSelectBody(subSelect, whereSegment);
-        } else if (fromItem instanceof ParenthesedFromItem) {
-            logger.debug("Perform a subQuery, if you do not give us feedback");
         }
     }
 
@@ -259,13 +257,12 @@ public abstract class BaseMultiTableInnerInterceptor extends JsqlParserSupport i
      * @return Table subJoin 中的主表
      */
     private List<Table> processSubJoin(ParenthesedFromItem subJoin, final String whereSegment) {
-        List<Table> mainTables = new ArrayList<>();
         while (subJoin.getJoins() == null && subJoin.getFromItem() instanceof ParenthesedFromItem) {
             subJoin = (ParenthesedFromItem) subJoin.getFromItem();
         }
+        List<Table> tableList = processFromItem(subJoin.getFromItem(), whereSegment);
+        List<Table> mainTables = new ArrayList<>(tableList);
         if (subJoin.getJoins() != null) {
-            List<Table> list = processFromItem(subJoin.getFromItem(), whereSegment);
-            mainTables.addAll(list);
             processJoins(mainTables, subJoin.getJoins(), whereSegment);
         }
         return mainTables;
@@ -304,7 +301,7 @@ public abstract class BaseMultiTableInnerInterceptor extends JsqlParserSupport i
                 joinTables = processSubJoin((ParenthesedFromItem) joinItem, whereSegment);
             }
 
-            if (joinTables != null) {
+            if (joinTables != null && !joinTables.isEmpty()) {
 
                 // 如果是隐式内连接
                 if (join.isSimple()) {

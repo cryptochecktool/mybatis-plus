@@ -96,9 +96,9 @@ public class DataPermissionInterceptor extends BaseMultiTableInnerInterceptor im
             // 参照 com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerInterceptor.processSelect 做的修改
             final String whereSegment = (String) obj;
             processSelectBody(select, whereSegment);
-            List<WithItem> withItemsList = select.getWithItemsList();
+            List<WithItem<?>> withItemsList = select.getWithItemsList();
             if (!CollectionUtils.isEmpty(withItemsList)) {
-                withItemsList.forEach(withItem -> processSelectBody(withItem, whereSegment));
+                withItemsList.forEach(withItem -> processSelectBody(withItem.getSelect(), whereSegment));
             }
         } else {
             // 兼容原来的旧版 DataPermissionHandler 场景

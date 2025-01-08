@@ -18,17 +18,21 @@ package com.baomidou.mybatisplus.generator.config.builder;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.core.handlers.AnnotationHandler;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.generator.IFill;
 import com.baomidou.mybatisplus.generator.ITemplate;
 import com.baomidou.mybatisplus.generator.config.ConstVal;
+import com.baomidou.mybatisplus.generator.config.GlobalConfig;
 import com.baomidou.mybatisplus.generator.config.INameConvert;
 import com.baomidou.mybatisplus.generator.config.StrategyConfig;
 import com.baomidou.mybatisplus.generator.config.po.TableInfo;
 import com.baomidou.mybatisplus.generator.config.rules.NamingStrategy;
 import com.baomidou.mybatisplus.generator.function.ConverterFileName;
+import com.baomidou.mybatisplus.generator.model.AnnotationAttributes;
 import com.baomidou.mybatisplus.generator.util.ClassUtils;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -39,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -55,7 +60,8 @@ import java.util.stream.Collectors;
  */
 public class Entity implements ITemplate {
 
-    private final AnnotationHandler annotationHandler = new AnnotationHandler(){};
+    private final AnnotationHandler annotationHandler = new AnnotationHandler() {
+    };
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Entity.class);
 
@@ -224,6 +230,19 @@ public class Entity implements ITemplate {
     private boolean generate = true;
 
     /**
+     * 默认lombok (兼容属性只有Getter和Setter)
+     */
+    private boolean defaultLombok = true;
+
+    /**
+     * 实体类注解
+     *
+     * @since 3.5.10
+     */
+    @Getter
+    private final List<AnnotationAttributes> classAnnotations = new ArrayList<>();
+
+    /**
      * <p>
      * 父类 Class 反射属性转换为公共字段
      * </p>
@@ -342,6 +361,55 @@ public class Entity implements ITemplate {
         data.put("entityLombokModel", this.lombok);
         data.put("entityBooleanColumnRemoveIsPrefix", this.booleanColumnRemoveIsPrefix);
         data.put("superEntityClass", ClassUtils.getSimpleName(this.superClass));
+        GlobalConfig globalConfig = tableInfo.getGlobalConfig();
+        String comment = tableInfo.getComment();
+        Set<String> importPackages = new HashSet<>(tableInfo.getImportPackages());
+        if (StringUtils.isBlank(comment)) {
+            comment = StringPool.EMPTY;
+        }
+        boolean kotlin = globalConfig.isKotlin();
+        if (!kotlin) {
+            // 原先kt模板没有处理这些,作为兼容项
+            if (chain) {
+                this.classAnnotations.add(new AnnotationAttributes("@Accessors(chain = true)", "lombok.experimental.Accessors"));
+            }
+            if (lombok && defaultLombok) {
+                // 原先lombok默认只有这两个
+                this.classAnnotations.add(new AnnotationAttributes("@Getter", "lombok.Getter"));
+                this.classAnnotations.add(new AnnotationAttributes("@Setter", "lombok.Setter"));
+            }
+        }
+        if (tableInfo.isConvert()) {
+            String schemaName = tableInfo.getSchemaName();
+            if (StringUtils.isBlank(schemaName)) {
+                schemaName = StringPool.EMPTY;
+            } else {
+                schemaName = schemaName + StringPool.DOT;
+            }
+            //@TableName("${schemaName}${table.name}")
+            String displayName = String.format("@TableName(\"%s%s\")", schemaName, tableInfo.getName());
+            this.classAnnotations.add(new AnnotationAttributes(TableName.class, displayName));
+        }
+        if (globalConfig.isSwagger()) {
+            //@ApiModel(value = "${entity}对象", description = "${table.comment!}")
+            String displayName = String.format("@ApiModel(value = \"%s对象\", description = \"%s\")", tableInfo.getEntityName(), comment);
+            this.classAnnotations.add(new AnnotationAttributes("@ApiModel",
+                displayName, "io.swagger.annotations.ApiModel", "io.swagger.annotations.ApiModelProperty"));
+        }
+        if (globalConfig.isSpringdoc()) {
+            //@Schema(name = "${entity}", description = "${table.comment!}")
+            String displayName = String.format("@Schema(name = \"%s\", description = \"%s\")", tableInfo.getEntityName(), comment);
+            this.classAnnotations.add(new AnnotationAttributes(displayName, "io.swagger.v3.oas.annotations.media.Schema"));
+        }
+        this.classAnnotations.forEach(attributes -> {
+            if (attributes.getDisplayNameFunction() != null) {
+                attributes.setDisplayName(attributes.getDisplayNameFunction().apply(tableInfo));
+            }
+            importPackages.addAll(attributes.getImportPackages());
+        });
+        data.put("entityClassAnnotations", this.classAnnotations.stream()
+            .sorted(Comparator.comparingInt(s -> s.getDisplayName().length())).collect(Collectors.toList()));
+        data.put("importEntityPackages", importPackages.stream().sorted().collect(Collectors.toList()));
         return data;
     }
 
@@ -420,13 +488,29 @@ public class Entity implements ITemplate {
         }
 
         /**
-         * 开启lombok模型
+         * 开启lombok模型 (默认添加Getter和Setter)
          *
          * @return this
          * @since 3.5.0
          */
         public Builder enableLombok() {
             this.entity.lombok = true;
+            return this;
+        }
+
+        /**
+         * 开启lombok模型 (这里会把注解属性都加入进去,无论是否启用kotlin)
+         *
+         * @param attributes 注解属性集合
+         * @return this
+         * @since 3.5.10
+         */
+        public Builder enableLombok(@NotNull AnnotationAttributes... attributes) {
+            this.entity.lombok = true;
+            this.entity.defaultLombok = false;
+            for (AnnotationAttributes attribute : attributes) {
+                this.addClassAnnotation(attribute);
+            }
             return this;
         }
 
@@ -673,6 +757,18 @@ public class Entity implements ITemplate {
          */
         public Builder disable() {
             this.entity.generate = false;
+            return this;
+        }
+
+        /**
+         * 添加类注解
+         *
+         * @param attributes 注解属性
+         * @return this
+         * @since 3.5.10
+         */
+        public Builder addClassAnnotation(@NotNull AnnotationAttributes attributes) {
+            this.entity.classAnnotations.add(attributes);
             return this;
         }
 
